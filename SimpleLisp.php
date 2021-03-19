@@ -165,8 +165,6 @@ class SimpleLisp
 
 
 
-
-
     // interpret就是不断求值，变量是被绑定到context中，实现变量作用域, context通过parent方式实现局部作用域
     // lisp，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、 if条件判断
     // identifier变量除了能绑定number与string外，还能绑定 lambda函数
@@ -182,7 +180,6 @@ class SimpleLisp
 
     //if判断语法 (if (> x y) (0 x) (1 y)) 第二个参数如果结果是真，
     //那么执行第三个参数作为if的结果为 (0 x的真值) 否则行第四个参数作为if的结果为 (1 y的真值)
-
 
     /**
      * @param EndNode[][]|EndNode[]|EndNode $ast
@@ -338,6 +335,12 @@ class SimpleLisp
                     $r += $arg;
                 }
                 return $r;
+            },
+            "<" => function ($a, $b) {
+                return ($a < $b) ? 1 : 0;
+            },
+            "-" => function ($a, $b) {
+                return $a - $b;
             }
         ];
     }
