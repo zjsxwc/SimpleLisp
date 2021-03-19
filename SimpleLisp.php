@@ -89,10 +89,9 @@ class SimpleLisp
     }
 
 
-    const TOKEN_NUMBER = 'number';
-    const TOKEN_STRING = 'string';
-    const TOKEN_IDENTIFIER = 'identifier';
-
+    const END_NODE_TYPE_NUMBER = 'number';
+    const END_NODE_TYPE_STRING = 'string';
+    const END_NODE_TYPE_IDENTIFIER = 'identifier';
 
     /**
      * 目前只有三种EndNode  number string identifier
@@ -103,17 +102,17 @@ class SimpleLisp
     {
         if (is_numeric($token)) {
             return EndNode::create([
-                'type' => self::TOKEN_NUMBER,
+                'type' => self::END_NODE_TYPE_NUMBER,
                 'value' => floatval($token)
             ]);
         } elseif (($token{0} === '"') && ($token{strlen($token) - 1} === '"')) {
             return EndNode::create([
-                'type' => self::TOKEN_STRING,
+                'type' => self::END_NODE_TYPE_STRING,
                 'value' => substr($token, 1, strlen($token) - 2)
             ]);
         } else {
             return EndNode::create([
-                'type' => self::TOKEN_IDENTIFIER,
+                'type' => self::END_NODE_TYPE_IDENTIFIER,
                 'value' => $token
             ]);
         }
@@ -165,9 +164,13 @@ class SimpleLisp
     }
 
 
-    // runtime 运行时，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、 if条件判断
+
+
+
+    // interpret就是不断求值，变量是被绑定到context中，实现变量作用域, context通过parent方式实现局部作用域
+    // lisp，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、 if条件判断
     // identifier变量除了能绑定number与string外，还能绑定 lambda函数
-    // lisp中如果array第一个 是 identifier 且 这个 identifier绑定了lambda函数，那么就调用这个 lambda函数，
+    // lisp中如果array第一个 直接是 callable函数 或者 identifier 且 这个 identifier绑定了lambda函数，那么就调用这个 lambda函数，
     // 否则就直接把 这个 array 当作数组 数据 返回， 没错 identifier和number、string一样也是数据，当然identifier未绑定时的值是null
 
     //let语法例子 (let ((id1 value1) (id2 value2) (id3 value3))  (+ id1 id2 id3))
@@ -180,12 +183,6 @@ class SimpleLisp
     //if判断语法 (if (> x y) (0 x) (1 y)) 第二个参数如果结果是真，
     //那么执行第三个参数作为if的结果为 (0 x的真值) 否则行第四个参数作为if的结果为 (1 y的真值)
 
-    // interpret就是不断求值，变量是被绑定到context中，实现变量作用域
-
-
-
-
-
 
     /**
      * @param EndNode[][]|EndNode[]|EndNode $ast
@@ -196,7 +193,7 @@ class SimpleLisp
     {
         //如果是 let、if、lambda
         if ($ast[0] instanceof EndNode) {
-            if ($ast[0]->type === self::TOKEN_IDENTIFIER) {
+            if ($ast[0]->type === self::END_NODE_TYPE_IDENTIFIER) {
                 if ($ast[0]->value === 'let') {
                     if (!is_array($ast[1])) {
                         throw new \RuntimeException("let 第二个参数必须为数组");
@@ -215,7 +212,7 @@ class SimpleLisp
                         }
                         //把计算的值$bindStatement[1] 绑定到identifier $bindStatement[0]
 
-                        $isStatement0ValidIdentifier = ($bindStatement[0] instanceof EndNode) && ($bindStatement[0]->type === self::TOKEN_IDENTIFIER);
+                        $isStatement0ValidIdentifier = ($bindStatement[0] instanceof EndNode) && ($bindStatement[0]->type === self::END_NODE_TYPE_IDENTIFIER);
                         if (!$isStatement0ValidIdentifier) {
                             throw new \RuntimeException(sprintf("let 第二个参数中 %s 的第一个参数必须为 identifier", json_encode($bindStatement)));
                         }
@@ -248,7 +245,7 @@ class SimpleLisp
                         $args = func_get_args();
                         $newScope = [];
                         foreach ($ast[1] as $i => $lambdaArg) {
-                            $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === self::TOKEN_IDENTIFIER);
+                            $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === self::END_NODE_TYPE_IDENTIFIER);
                             if (!$isLambdaArgValidIdentifier) {
                                 throw new \RuntimeException(sprintf("lambda 第二个参数中 %s 必须为 identifier", json_encode($lambdaArg)));
                             }
@@ -297,10 +294,10 @@ class SimpleLisp
         if (is_array($ast)) {
             return self::interpretArray($ast, $context);
         } elseif ($ast instanceof EndNode) {
-            if ($ast->type === self::TOKEN_IDENTIFIER) {
+            if ($ast->type === self::END_NODE_TYPE_IDENTIFIER) {
                 return $context->get($ast->value);
             }
-            if (($ast->type === self::TOKEN_NUMBER) || ($ast->type === self::TOKEN_STRING)) {
+            if (($ast->type === self::END_NODE_TYPE_NUMBER) || ($ast->type === self::END_NODE_TYPE_STRING)) {
                 return $ast->value;
             }
         }
