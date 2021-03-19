@@ -122,7 +122,7 @@ class SimpleLisp
      * 每个函数都是一个array，这个数组里面每个非函数的元素，都是EndNode，如果元素是函数则用新array表示
      * lisp函数是由  array、 number、 string、identifier 四种类型的Node组成的
      *
-     * lisp函数 = Node = array = [array|EndNode]+
+     * lisp函数 = Ast = NodeList = array = [array|EndNode]+
      * EndNode = number|string|identifier
      *
      * @param string[] $tokenList
