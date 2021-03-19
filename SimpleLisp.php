@@ -127,7 +127,7 @@ class SimpleLisp
      *
      * @param string[] $tokenList
      * @param null|array[] $currentLispNodeList 每个函数都有对应的nodeList
-     * @return mixed[]|EndNode[][]  返回当前函数的完整 NodeList
+     * @return mixed[]|EndNode[][]|EndNode[]  返回当前函数的完整 NodeList
      */
     static public function createAst(&$tokenList, &$currentLispNodeList = null)
     {
