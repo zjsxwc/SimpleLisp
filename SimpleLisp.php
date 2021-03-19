@@ -336,12 +336,30 @@ class SimpleLisp
                 }
                 return $r;
             },
+            "-" => function ($a, $b) {
+                return $a - $b;
+            },
+            "*" => function ($a, $b) {
+                return $a * $b;
+            },
+            "/" => function ($a, $b) {
+                return floatval($a) / floatval($b);
+            },
             "<" => function ($a, $b) {
                 return ($a < $b) ? 1 : 0;
             },
-            "-" => function ($a, $b) {
-                return $a - $b;
-            }
+            ">" => function ($a, $b) {
+                return ($a > $b) ? 1 : 0;
+            },
+            "=" => function ($a, $b) {
+                return ($a == $b) ? 1 : 0;
+            },
+            "<=" => function ($a, $b) {
+                return ($a <= $b) ? 1 : 0;
+            },
+            ">=" => function ($a, $b) {
+                return ($a >= $b) ? 1 : 0;
+            },
         ];
     }
 }
