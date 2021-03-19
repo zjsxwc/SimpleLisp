@@ -29,8 +29,7 @@ $fib = '
 //f6 8  f7 13
 //f8 21 f9 34
 
-$tokenList =
-    (SimpleLisp::tokenize($fib));
+$tokenList = SimpleLisp::tokenize($fib);
 $ast = SimpleLisp::createAst($tokenList);
 
 var_dump(SimpleLisp::interpret($ast));
