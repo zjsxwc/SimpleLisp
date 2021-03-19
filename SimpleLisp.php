@@ -192,7 +192,7 @@ class SimpleLisp
     static public function interpretArray($ast, $context)
     {
         //如果是 let、if、lambda
-        if ($ast[0] instanceof EndNode) {
+        if ($ast && ($ast[0] instanceof EndNode)) {
             if ($ast[0]->type === self::END_NODE_TYPE_IDENTIFIER) {
                 if ($ast[0]->value === 'let') {
                     if (!is_array($ast[1])) {

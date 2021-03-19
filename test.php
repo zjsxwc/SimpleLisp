@@ -4,13 +4,24 @@ include_once __DIR__ . "/SimpleLisp.php";
 use \SimpleLisp\SimpleLisp;
 
 $tokenList =
-    (SimpleLisp::tokenize('(let ((x 2333) (y 555) (add (lambda (a b) (+ a b 1)))) (print (add x y) ))'));
+    (SimpleLisp::tokenize('(if 1  (let ((x 2333) (y 555) (add (lambda (a b) (+ a b 1)))) (rest (print (add x y) mm 455)))  "else here")'));
 $ast = SimpleLisp::createAst($tokenList);
 
-SimpleLisp::interpret($ast);
+var_dump(SimpleLisp::interpret($ast));
 
-//output
-// array(1) {
+//output:
+//
+//array(3) {
 //  [0]=>
 //  float(2889)
+//  [1]=>
+//  NULL
+//  [2]=>
+//  float(455)
+//}
+//array(2) {
+//  [0]=>
+//  NULL
+//  [1]=>
+//  float(455)
 //}
