@@ -309,9 +309,15 @@ class SimpleLisp
     {
         return [
             "first" => function ($x) {
+                if (!is_array($x)) {
+                    throw new \RuntimeException("first 参数必须是array，不能传入" . json_encode($x));
+                }
                 return $x[0];
             },
             "rest" => function ($x) {
+                if (!is_array($x)) {
+                    throw new \RuntimeException("rest 参数必须是array，不能传入" . json_encode($x));
+                }
                 $r = [];
                 foreach ($x as $i => $p) {
                     if ($i) {
