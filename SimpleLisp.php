@@ -238,7 +238,7 @@ class SimpleLisp
                     if (!is_array($ast[1])) {
                         throw new \RuntimeException(sprintf("lambda 第二个参数 %s 必须为数组", json_encode($ast[1])));
                     }
-                    return function () use ($ast, $context){
+                    return function () use ($ast, $context) {
                         $args = func_get_args();
                         $newScope = [];
                         foreach ($ast[1] as $i => $lambdaArg) {

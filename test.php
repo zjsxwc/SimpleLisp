@@ -32,8 +32,7 @@ $fib = '
 (let
     ((fib    
         (lambda (n)   
-            (if
-                (< n 2)  n  (+
+            (if (< n 2)  n  (+
                                 (fib (- n 1)) (fib (- n 2))
                             )
             
@@ -41,7 +40,7 @@ $fib = '
         ) 
     ))
     
-    (fib  9 )
+    (fib  9)
 )
 ';
 //f0 0 f1 1
