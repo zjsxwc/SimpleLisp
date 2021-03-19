@@ -4,6 +4,42 @@
 namespace SimpleLisp;
 
 
+class RuntimeContext
+{
+    /** @var array */
+    public $scope;
+    /** @var null|self */
+    public $parent;
+
+    /**
+     * @param array $scope
+     * @param null|self $parent
+     * @return RuntimeContext
+     */
+    static public function create($scope = [], $parent = null)
+    {
+        $c = new self();
+        $c->scope = $scope;
+        $c->parent = $parent;
+        return $c;
+    }
+
+    /**
+     * @param string $identifier
+     * @return mixed|null
+     */
+    public function get($identifier)
+    {
+        if (isset($this->scope[$identifier])) {
+            return $this->scope[$identifier];
+        }
+        if ($this->parent) {
+            return $this->parent->get($identifier);
+        }
+        return null;
+    }
+}
+
 class EndNode
 {
     /** @var string */
@@ -55,6 +91,11 @@ class SimpleLisp
     }
 
 
+    const TOKEN_NUMBER = 'number';
+    const TOKEN_STRING = 'string';
+    const TOKEN_IDENTIFIER = 'identifier';
+
+
     /**
      * 目前只有三种EndNode  number string identifier
      * @param string $token
@@ -64,17 +105,17 @@ class SimpleLisp
     {
         if (is_numeric($token)) {
             return EndNode::create([
-                'type' => 'number',
+                'type' => self::TOKEN_NUMBER,
                 'value' => floatval($token)
             ]);
         } elseif (($token{0} === '"') && ($token{strlen($token) - 1} === '"')) {
             return EndNode::create([
-                'type' => 'string',
+                'type' => self::TOKEN_STRING,
                 'value' => substr($token, 1, strlen($token) - 2)
             ]);
         } else {
             return EndNode::create([
-                'type' => 'identifier',
+                'type' => self::TOKEN_IDENTIFIER,
                 'value' => $token
             ]);
         }
@@ -99,7 +140,7 @@ class SimpleLisp
         } else {
             $token = array_shift($tokenList);
             if ($token === null) {
-                throw new \RuntimeException("token cannot be null");
+                throw new \RuntimeException("token 不能为 null");
             } elseif ($token === '(') {
                 $newNodeList = [];
                 $arrayNode = self::createAst($tokenList, $newNodeList);
@@ -129,7 +170,7 @@ class SimpleLisp
     // runtime 运行时，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、 if条件判断
     // identifier变量除了能绑定number与string外，还能绑定 lambda函数
     // lisp中如果array第一个 是 identifier 且 这个 identifier绑定了lambda函数，那么就调用这个 lambda函数，
-    // 否则就直接把 这个 array 当作数组 数据 返回， 没错 identifier和number、string一样也是数据
+    // 否则就直接把 这个 array 当作数组 数据 返回， 没错 identifier和number、string一样也是数据，当然identifier未绑定时的值是null
 
     //let语法例子 (let ((id1 value1) (id2 value2) (id3 value3))  (+ id1 id2 id3))
     //上面 第二个参数里面是绑定value到id变量  第三个参数是使用这些变量做加法  第三个参数的返回值就是 整个let的返回值，
@@ -141,7 +182,164 @@ class SimpleLisp
     //if判断语法 (if (> x y) (0 x) (1 y)) 第二个参数如果结果是真，
     //那么执行第三个参数作为if的结果为 (0 x的真值) 否则行第四个参数作为if的结果为 (1 y的真值)
 
+    // interpret就是不断求值，变量是被绑定到context中，实现变量作用域
+
+
+
+
+
+
+    /**
+     * @param EndNode[][]|EndNode[]|EndNode $ast
+     * @param null|RuntimeContext $context
+     * @return mixed
+     */
+    static public function interpretArray($ast, $context)
+    {
+        //如果是 let、if、lambda
+        if ($ast[0] instanceof EndNode) {
+            if ($ast[0]->type === self::TOKEN_IDENTIFIER) {
+                if ($ast[0]->value === 'let') {
+                    if (!is_array($ast[1])) {
+                        throw new \RuntimeException("let 第二个参数必须为数组");
+                    }
+                    if (count($ast) != 3) {
+                        throw new \RuntimeException(sprintf("let  %s 数组长度必须为3", json_encode($ast)));
+                    }
+                    //$ast[1] 必为数组
+                    $newContext = RuntimeContext::create([], $context);
+                    foreach ($ast[1] as $bindStatement) {
+                        if (!is_array($bindStatement)) {
+                            throw new \RuntimeException(sprintf("let 第二个参数中 %s 必须为数组", json_encode($bindStatement)));
+                        }
+                        if (count($bindStatement) != 2) {
+                            throw new \RuntimeException(sprintf("let 第二个参数中 %s 数组长度必须为2", json_encode($bindStatement)));
+                        }
+                        //把计算的值$bindStatement[1] 绑定到identifier $bindStatement[0]
+
+                        $isStatement0ValidIdentifier = ($bindStatement[0] instanceof EndNode) && ($bindStatement[0]->type === self::TOKEN_IDENTIFIER);
+                        if (!$isStatement0ValidIdentifier) {
+                            throw new \RuntimeException(sprintf("let 第二个参数中 %s 的第一个参数必须为 identifier", json_encode($bindStatement)));
+                        }
+                        $newContext->scope[$bindStatement[0]->value] = self::interpret($bindStatement[1], $newContext);
+                    }
+
+                    return  self::interpret($ast[2], $newContext);
+                }
+
+                if ($ast[0]->value === 'if') {
+                    if (count($ast) != 4) {
+                        throw new \RuntimeException(sprintf("if %s 数组长度必须为4", json_encode($ast)));
+                    }
+                    $judgeResult = self::interpret($ast[1], $context);
+                    if ($judgeResult) {
+                        return self::interpret($ast[2], $context);
+                    } else {
+                        return self::interpret($ast[3], $context);
+                    }
+                }
+
+                if ($ast[0]->value === 'lambda') {
+                    if (count($ast) != 3) {
+                        throw new \RuntimeException(sprintf("lambda %s 数组长度必须等于3", json_encode($ast)));
+                    }
+                    if (!is_array($ast[1])) {
+                        throw new \RuntimeException(sprintf("lambda 第二个参数 %s 必须为数组", json_encode($ast[1])));
+                    }
+                    return function () use ($ast, $context){
+                        $args = func_get_args();
+                        $newScope = [];
+                        foreach ($ast[1] as $i => $lambdaArg) {
+                            $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === self::TOKEN_IDENTIFIER);
+                            if (!$isLambdaArgValidIdentifier) {
+                                throw new \RuntimeException(sprintf("lambda 第二个参数中 %s 必须为 identifier", json_encode($lambdaArg)));
+                            }
+
+                            $newScope[$lambdaArg->value] = $args[$i];
+                        }
+                        $newContext = RuntimeContext::create($newScope, $context);
+                        return self::interpret($ast[2], $newContext);
+                    };
+                }
+            }
+        }
+
+        //求解每个Node
+        $interpretedNodeResultArray = [];
+        foreach ($ast as $node) {
+            $interpretedNodeResultArray[] = self::interpret($node, $context);
+        }
+
+        //如果第一个Node是lambda函数的结果，则调用它
+        if ($interpretedNodeResultArray && is_callable($interpretedNodeResultArray[0])) {
+            $args = [];
+            foreach ($interpretedNodeResultArray as $i => $result) {
+                if ($i) {
+                    $args[] = $result;
+                }
+            }
+            return call_user_func_array($interpretedNodeResultArray[0], $args);
+        }
+
+        //如果只是普通array就返回它
+        return $interpretedNodeResultArray;
+    }
+
+    /**
+     * @param EndNode[][]|EndNode[]|EndNode $ast
+     * @param null|RuntimeContext $context
+     * @return mixed
+     */
+    static public function interpret($ast, $context = null)
+    {
+        if ($context === null) {
+            $newContext = RuntimeContext::create(self::getBuiltInFunctions(), null);
+            return self::interpret($ast, $newContext);
+        }
+        if (is_array($ast)) {
+            return self::interpretArray($ast, $context);
+        } elseif ($ast instanceof EndNode) {
+            if ($ast->type === self::TOKEN_IDENTIFIER) {
+                return $context->get($ast->value);
+            }
+            if (($ast->type === self::TOKEN_NUMBER) || ($ast->type === self::TOKEN_STRING)) {
+                return $ast->value;
+            }
+        }
+        throw new \RuntimeException("不可能存在既不是array 又不是 EndNode 的 Node" . json_encode($ast));
+    }
+
+
+    static public function getBuiltInFunctions()
+    {
+        return [
+            "first" => function ($x) {
+                return $x[0];
+            },
+            "rest" => function ($x) {
+                $r = [];
+                foreach ($x as $i => $p) {
+                    if ($i) {
+                        $r[] = $p;
+                    }
+                }
+                return $r;
+            },
+            "print" => function ($x) {
+                var_dump($x);
+                return $x;
+            },
+            "+" => function ($a, $b) {
+                return $a+$b;
+            }
+        ];
+    }
+
 }
 
-$tokenList = (SimpleLisp::tokenize('(let (x "hello lisp") (y 1 "2d  fs" 455 k (j 33)))'));
-var_dump(SimpleLisp::createAst($tokenList));
+$tokenList =
+    (SimpleLisp::tokenize('(let ((x 2333) (y 555) (add (lambda (a b) (+ a b)))) (print (add x y)))'));
+$ast = SimpleLisp::createAst($tokenList);
+
+SimpleLisp::interpret($ast);
+//output float(2888)
