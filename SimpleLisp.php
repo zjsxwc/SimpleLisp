@@ -270,7 +270,7 @@ class SimpleLisp
             $interpretedNodeResultArray[] = self::interpret($node, $context);
         }
 
-        //如果第一个Node是lambda函数的结果，则调用它
+        //如果第一个Node是 自定义lambda函数 或者 buildin函数 的结果，则调用它
         if ($interpretedNodeResultArray && is_callable($interpretedNodeResultArray[0])) {
             $args = [];
             foreach ($interpretedNodeResultArray as $i => $result) {
@@ -325,21 +325,19 @@ class SimpleLisp
                 }
                 return $r;
             },
-            "print" => function ($x) {
-                var_dump($x);
-                return $x;
+            "print" => function () {
+                $args = func_get_args();
+                var_dump($args);
+                return $args;
             },
-            "+" => function ($a, $b) {
-                return $a+$b;
+            "+" => function () {
+                $args = func_get_args();
+                $r = 0;
+                foreach ($args as $arg) {
+                    $r += $arg;
+                }
+                return $r;
             }
         ];
     }
-
 }
-
-$tokenList =
-    (SimpleLisp::tokenize('(let ((x 2333) (y 555) (add (lambda (a b) (+ a b)))) (print (add x y)))'));
-$ast = SimpleLisp::createAst($tokenList);
-
-SimpleLisp::interpret($ast);
-//output float(2888)
