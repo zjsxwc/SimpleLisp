@@ -1,5 +1,5 @@
 
-A simple lisp runtime implemented by php
+A simple lisp interpreter implemented by php
 
 
 ```php
