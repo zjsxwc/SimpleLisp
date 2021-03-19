@@ -126,7 +126,7 @@ class SimpleLisp
     }
 
 
-    // runtime 运行时，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、
+    // runtime 运行时，需要支持 lambda 函数、  let变量、 lambda函数中的变量需要能有作用域、 if条件判断
     // identifier变量除了能绑定number与string外，还能绑定 lambda函数
     // lisp中如果array第一个 是 identifier 且 这个 identifier绑定了lambda函数，那么就调用这个 lambda函数，
     // 否则就直接把 这个 array 当作数组 数据 返回， 没错 identifier和number、string一样也是数据
@@ -137,6 +137,9 @@ class SimpleLisp
 
     //lambda语法例子 ((lambda (x y) (0 x y)) 1 2) 第一个参数是lambda函数，
     //第二个参数1是这个lambda函数的第一个实参，第三个参数2是lambda函数的第二个实参，这个lambda使用这些参数返回了数组结果为 (0 1 2)
+
+    //if判断语法 (if (> x y) (0 x) (1 y)) 第二个参数如果结果是真，
+    //那么执行第三个参数作为if的结果为 (0 x的真值) 否则行第四个参数作为if的结果为 (1 y的真值)
 
 }
 
