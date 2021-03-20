@@ -1,27 +1,42 @@
 
 A simple lisp interpreter implemented by php
 
+#### 语法
+
+目前只支持 `let` `lambda` `if` 三种基础语句，
+当然有了变量绑定、lambda函数、条件判断这三种语法后，
+lisp也基本是完备了的。
+
+内置函数也只是加减乘除等，详见`getBuiltInFunctions`方法返回。
+
+
+
 #### 例子
+
+计算第10个斐波那契数：
 
 ```php
 <?php
 include_once __DIR__ . "/SimpleLisp.php";
 
 use \SimpleLisp\SimpleLisp;
-
 $fib = '
 (let
-    ((fib    
-        (lambda (n)   
-            (if (< n 2)  n  (+
-                                (fib (- n 1)) (fib (- n 2))
-                            )
-            
-            )
-        ) 
-    ))
+    (
+        (nth 9)
+        
+        (fib    
+            (lambda (n)   
+                (if (< n 2)  n  (+
+                                    (fib (- n 1)) (fib (- n 2))
+                                )
+                
+                )
+            ) 
+        )
+    )
     
-    (fib  9)
+    (fib  nth)
 )
 ';
 //f0 0  f1  1
