@@ -46,7 +46,7 @@ lisp如果不用直接解释器而用vm bytecode方式实现，
 
 则context对象要用 内存读写操作 来模拟，类似多级hashmap的数据结构，
 
-而由于bytecode没有php的闭包函数，则lambda要用 固定的程序码，类似c语言“代码区”，
+而由于bytecode没有php的闭包函数，则lambda要用固定的程序码，类似c语言“代码区”，
 代码执行用jump指令与当前正在执行的指令位置变量ip，
 以及每次jump进函数都要创建新子context来模拟局部变量，
 子context要记录要返回的代码执行ip地址值，与结果放到父context的哪个位置，
