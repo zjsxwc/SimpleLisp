@@ -1,5 +1,7 @@
 
-A simple lisp interpreter implemented by php
+A simple lisp interpreter implemented by php.
+
+一个200行左右代码实现的lisp解释器。
 
 #### 语法
 
