@@ -1,7 +1,6 @@
 <?php
 namespace SimpleLisp;
 
-
 class RuntimeContext
 {
     /** @var array */
@@ -60,10 +59,9 @@ class EndNode
 
 class SimpleLisp
 {
-
     /**
      * @param $input
-     * @return string[]
+     * @return string[] $tokenList
      */
     static public function tokenize($input)
     {
