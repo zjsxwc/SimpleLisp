@@ -7,7 +7,14 @@ A simple lisp interpreter implemented by php
 当然有了变量绑定、lambda函数、条件判断这三种语法后，
 lisp也基本是完备了的。
 
-内置函数也只是加减乘除等，详见`getBuiltInFunctions`方法返回。
+数据类型只有`number` `string` `lambda函数` `数组`，
+
+在执行时`identifier`可以通过`let`绑定这些数据，没有绑定数据的`identifier`会被当作`null`值,
+
+如果`数组`第一个元素的值是`lambda函数`或者`内置函数`则这个`数组`的值会被计算为函数调用后的值，
+而不是单纯`数组`本身值，所以如果要传递`函数`值，就不能把函数放在数组第一个元素中。
+
+`内置函数`目前也只是加减乘除等，详见`getBuiltInFunctions`方法返回。
 
 
 
