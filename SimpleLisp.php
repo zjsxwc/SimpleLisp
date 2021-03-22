@@ -180,7 +180,7 @@ class SimpleLisp
     //那么执行第三个参数作为if的结果为 (0 x的真值) 否则行第四个参数作为if的结果为 (1 y的真值)
 
     /**
-     * @param EndNode[][]|EndNode[]|EndNode $ast
+     * @param EndNode[][]|EndNode[]|mixed[] $ast
      * @param null|RuntimeContext $context
      * @return mixed
      */
