@@ -235,10 +235,14 @@ class SimpleLisp
                     if (!is_array($ast[1])) {
                         throw new \RuntimeException(sprintf("lambda 第二个参数 %s 必须为数组", json_encode($ast[1])));
                     }
-                    return function () use ($ast, $context) {
+
+                    //localAst 将被lambda函数捕获持有
+                    $localAst = $ast;
+                    return function () use ($localAst, $context) {
                         $args = func_get_args();
+                        //把实参的值绑定到局部变量中，形参也是局部变量
                         $newScope = [];
-                        foreach ($ast[1] as $i => $lambdaArg) {
+                        foreach ($localAst[1] as $i => $lambdaArg) {
                             $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === EndNode::END_NODE_TYPE_IDENTIFIER);
                             if (!$isLambdaArgValidIdentifier) {
                                 throw new \RuntimeException(sprintf("lambda 第二个参数中 %s 必须为 identifier", json_encode($lambdaArg)));
@@ -247,7 +251,7 @@ class SimpleLisp
                             $newScope[$lambdaArg->value] = $args[$i];
                         }
                         $newContext = RuntimeContext::create($newScope, $context);
-                        return self::interpret($ast[2], $newContext);
+                        return self::interpret($localAst[2], $newContext);
                     };
                 }
             }
