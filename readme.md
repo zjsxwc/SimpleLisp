@@ -3,6 +3,8 @@ A simple lisp interpreter implemented by php.
 
 一个200行左右代码实现的lisp解释器。
 
+由于lisp语法太简单了，所以不需要LL、LR等方法，直接自顶向下递归子程序法就能构建AST树。
+
 #### 语法
 
 目前只支持 `let` `lambda` `if` 三种基础语句，
