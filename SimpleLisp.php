@@ -79,11 +79,11 @@ class SimpleLisp
         }
         $input = implode('"', $sList);
         $input = trim($input);
-        $sList = preg_split('/\s+/', $input);
-        foreach ($sList as &$s) {
+        $tokenList = preg_split('/\s+/', $input);
+        foreach ($tokenList as &$s) {
             $s = str_replace('!whitespace!', ' ', $s);
         }
-        return $sList;
+        return $tokenList;
     }
 
 
