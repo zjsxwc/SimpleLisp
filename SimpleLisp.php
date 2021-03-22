@@ -236,7 +236,7 @@ class SimpleLisp
                         throw new \RuntimeException(sprintf("lambda 第二个参数 %s 必须为数组", json_encode($ast[1])));
                     }
 
-                    //localAst 将被lambda函数捕获持有
+                    //localAst 将被返回的闭包函数捕获持有
                     $localAst = $ast;
                     return function () use ($localAst, $context) {
                         $args = func_get_args();
