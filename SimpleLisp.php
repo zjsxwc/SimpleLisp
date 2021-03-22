@@ -39,6 +39,10 @@ class RuntimeContext
 
 class EndNode
 {
+    const END_NODE_TYPE_NUMBER = 'number';
+    const END_NODE_TYPE_STRING = 'string';
+    const END_NODE_TYPE_IDENTIFIER = 'identifier';
+
     /** @var string */
     public $type;
     /** @var string */
@@ -86,11 +90,6 @@ class SimpleLisp
         return $tokenList;
     }
 
-
-    const END_NODE_TYPE_NUMBER = 'number';
-    const END_NODE_TYPE_STRING = 'string';
-    const END_NODE_TYPE_IDENTIFIER = 'identifier';
-
     /**
      * 目前只有三种EndNode  number string identifier
      * @param string $token
@@ -100,17 +99,17 @@ class SimpleLisp
     {
         if (is_numeric($token)) {
             return EndNode::create([
-                'type' => self::END_NODE_TYPE_NUMBER,
+                'type' => EndNode::END_NODE_TYPE_NUMBER,
                 'value' => floatval($token)
             ]);
         } elseif (($token{0} === '"') && ($token{strlen($token) - 1} === '"')) {
             return EndNode::create([
-                'type' => self::END_NODE_TYPE_STRING,
+                'type' => EndNode::END_NODE_TYPE_STRING,
                 'value' => substr($token, 1, strlen($token) - 2)
             ]);
         } else {
             return EndNode::create([
-                'type' => self::END_NODE_TYPE_IDENTIFIER,
+                'type' => EndNode::END_NODE_TYPE_IDENTIFIER,
                 'value' => $token
             ]);
         }
@@ -188,7 +187,7 @@ class SimpleLisp
     {
         //如果是 let、if、lambda
         if ($ast && ($ast[0] instanceof EndNode)) {
-            if ($ast[0]->type === self::END_NODE_TYPE_IDENTIFIER) {
+            if ($ast[0]->type === EndNode::END_NODE_TYPE_IDENTIFIER) {
                 if ($ast[0]->value === 'let') {
                     if (!is_array($ast[1])) {
                         throw new \RuntimeException("let 第二个参数必须为数组");
@@ -207,7 +206,7 @@ class SimpleLisp
                         }
                         //把计算的值$bindStatement[1] 绑定到identifier $bindStatement[0]
 
-                        $isStatement0ValidIdentifier = ($bindStatement[0] instanceof EndNode) && ($bindStatement[0]->type === self::END_NODE_TYPE_IDENTIFIER);
+                        $isStatement0ValidIdentifier = ($bindStatement[0] instanceof EndNode) && ($bindStatement[0]->type === EndNode::END_NODE_TYPE_IDENTIFIER);
                         if (!$isStatement0ValidIdentifier) {
                             throw new \RuntimeException(sprintf("let 第二个参数中 %s 的第一个参数必须为 identifier", json_encode($bindStatement)));
                         }
@@ -240,7 +239,7 @@ class SimpleLisp
                         $args = func_get_args();
                         $newScope = [];
                         foreach ($ast[1] as $i => $lambdaArg) {
-                            $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === self::END_NODE_TYPE_IDENTIFIER);
+                            $isLambdaArgValidIdentifier = ($lambdaArg instanceof EndNode) && ($lambdaArg->type === EndNode::END_NODE_TYPE_IDENTIFIER);
                             if (!$isLambdaArgValidIdentifier) {
                                 throw new \RuntimeException(sprintf("lambda 第二个参数中 %s 必须为 identifier", json_encode($lambdaArg)));
                             }
@@ -289,10 +288,10 @@ class SimpleLisp
         if (is_array($ast)) {
             return self::interpretArray($ast, $context);
         } elseif ($ast instanceof EndNode) {
-            if ($ast->type === self::END_NODE_TYPE_IDENTIFIER) {
+            if ($ast->type === EndNode::END_NODE_TYPE_IDENTIFIER) {
                 return $context->get($ast->value);
             }
-            if (($ast->type === self::END_NODE_TYPE_NUMBER) || ($ast->type === self::END_NODE_TYPE_STRING)) {
+            if (($ast->type === EndNode::END_NODE_TYPE_NUMBER) || ($ast->type === EndNode::END_NODE_TYPE_STRING)) {
                 return $ast->value;
             }
         }
