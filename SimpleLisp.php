@@ -102,7 +102,7 @@ class SimpleLisp
                 'type' => EndNode::END_NODE_TYPE_NUMBER,
                 'value' => floatval($token)
             ]);
-        } elseif (($token{0} === '"') && ($token{strlen($token) - 1} === '"')) {
+        } elseif (($token[0] === '"') && ($token[strlen($token) - 1] === '"')) {
             return EndNode::create([
                 'type' => EndNode::END_NODE_TYPE_STRING,
                 'value' => substr($token, 1, strlen($token) - 2)
