@@ -33,6 +33,7 @@ class RuntimeContext
         if ($this->parent) {
             return $this->parent->get($identifier);
         }
+        //echo "找不到变量{$identifier} 用null 代替\r\n";
         return null;
     }
 }
@@ -364,3 +365,202 @@ class SimpleLisp
         ];
     }
 }
+
+
+
+
+
+/**
+ * 中文+数字+字母变量名 四则运算转Lisp表达式转换器
+ * 支持：中文/数字/字母组合变量名、+ - * / 四则运算、括号优先级、混合运算
+ * 变量名规则：可包含中文字符、字母（大小写）、数字，不能以数字开头
+ * 示例：(销售额A1 - 成本B2) * 利润率C3 / 数量D4 → (* (/ (- 销售额A1 成本B2) 利润率C3) 数量D4)
+ */
+class ChineseMathToLisp
+{
+    // 运算符优先级（数字越大优先级越高）
+    private $opPriority = [
+        '+' => 1,
+        '-' => 1,
+        '*' => 2,
+        '/' => 2,
+        '(' => 0, // 括号优先级最低，仅用于栈控制
+    ];
+
+    /**
+     * 校验变量名合法性（支持中文/字母开头，可含数字/字母/中文）
+     * @param string $var 待校验的变量名
+     * @throws InvalidArgumentException
+     */
+    private function validateVarName(string $var): void
+    {
+        // 变量名正则：以中文/字母开头，后续可跟中文/字母/数字
+        $pattern = '/^[\x{4e00}-\x{9fa5}a-zA-Z][\x{4e00}-\x{9fa5}a-zA-Z0-9]*$/u';
+        // 纯数字判定（数值不需要校验变量名规则）
+        $isNumber = preg_match('/^\d+(\.\d+)?$/u', $var);
+
+        if (!$isNumber && !preg_match($pattern, $var)) {
+            throw new InvalidArgumentException("非法变量名：{$var}（需以中文/字母开头，可含中文/字母/数字）");
+        }
+    }
+
+    /**
+     * 词法分析：将表达式拆分为Token（数值、中文+数字+字母变量、运算符、括号）
+     * @param string $expr 原始表达式（如：(销售额A1-成本B2)*利润率C3/数量D4）
+     * @return array Token数组
+     */
+    private function tokenize(string $expr): array
+    {
+        $tokens = [];
+        $len = mb_strlen($expr, 'UTF-8');
+        $current = '';
+        $i = 0;
+
+        while ($i < $len) {
+            $char = mb_substr($expr, $i, 1, 'UTF-8');
+            
+            // 跳过空白字符
+            if (ctype_space($char)) {
+                $i++;
+                continue;
+            }
+
+            // 运算符/括号：直接作为独立Token
+            if (in_array($char, ['+', '-', '*', '/', '(', ')'])) {
+                // 如果当前有累积的变量/数值，先加入Token并校验
+                if (!empty($current)) {
+                    $this->validateVarName($current);
+                    $tokens[] = $current;
+                    $current = '';
+                }
+                $tokens[] = $char;
+                $i++;
+            } 
+            // 中文/字母/数字/小数点：累积为变量/数值Token
+            else if (preg_match('/^[\x{4e00}-\x{9fa5}a-zA-Z0-9.]+$/u', $char)) {
+                $current .= $char;
+                $i++;
+            } 
+            // 非法字符
+            else {
+                throw new InvalidArgumentException("非法字符：{$char}，位置：{$i}");
+            }
+        }
+
+        // 处理最后一个累积的Token并校验
+        if (!empty($current)) {
+            $this->validateVarName($current);
+            $tokens[] = $current;
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * 中缀表达式（常规四则运算）转后缀表达式（逆波兰表示）
+     * @param array $tokens 词法分析后的Token数组
+     * @return array 后缀表达式数组
+     */
+    private function infixToPostfix(array $tokens): array
+    {
+        $output = []; // 输出队列
+        $opStack = []; // 运算符栈
+
+        foreach ($tokens as $token) {
+            // 变量/数字：直接加入输出队列
+            if (!in_array($token, ['+', '-', '*', '/', '(', ')'])) {
+                $output[] = $token;
+            }
+            // 左括号：入栈
+            elseif ($token === '(') {
+                array_push($opStack, $token);
+            }
+            // 右括号：弹出栈内运算符直到左括号
+            elseif ($token === ')') {
+                while (!empty($opStack) && end($opStack) !== '(') {
+                    $output[] = array_pop($opStack);
+                }
+                // 弹出左括号（不加入输出）
+                if (empty($opStack)) {
+                    throw new InvalidArgumentException("括号不匹配：缺少左括号");
+                }
+                array_pop($opStack);
+            }
+            // 运算符：按优先级处理
+            else {
+                while (!empty($opStack) && $this->opPriority[end($opStack)] >= $this->opPriority[$token]) {
+                    $output[] = array_pop($opStack);
+                }
+                array_push($opStack, $token);
+            }
+        }
+
+        // 弹出栈内剩余运算符
+        while (!empty($opStack)) {
+            $op = array_pop($opStack);
+            if ($op === '(') {
+                throw new InvalidArgumentException("括号不匹配：缺少右括号");
+            }
+            $output[] = $op;
+        }
+
+        return $output;
+    }
+
+    /**
+     * 后缀表达式转Lisp表达式
+     * @param array $postfix 后缀表达式数组
+     * @return string Lisp表达式
+     */
+    private function postfixToLisp(array $postfix): string
+    {
+        $stack = [];
+
+        foreach ($postfix as $token) {
+            // 运算符：弹出两个操作数，构造Lisp节点
+            if (in_array($token, ['+', '-', '*', '/'])) {
+                if (count($stack) < 2) {
+                    throw new InvalidArgumentException("表达式语法错误：操作数不足");
+                }
+                $right = array_pop($stack);
+                $left = array_pop($stack);
+                $stack[] = "({$token} {$left} {$right})";
+            }
+            // 变量/数字：直接入栈
+            else {
+                $stack[] = $token;
+            }
+        }
+
+        if (count($stack) !== 1) {
+            throw new InvalidArgumentException("表达式语法错误：运算符/操作数不匹配");
+        }
+
+        return $stack[0];
+    }
+
+    /**
+     * 主转换方法
+     * @param string $expr 原始四则运算表达式
+     * @return string Lisp表达式
+     * @throws InvalidArgumentException
+     */
+    public function convert(string $expr): string
+    {
+        // 预处理：移除全角符号、统一格式
+        $expr = str_replace(['（', '）', '＋', '－', '×', '÷'], ['(', ')', '+', '-', '*', '/'], $expr);
+        $expr = trim($expr);
+
+        if (empty($expr)) {
+            throw new InvalidArgumentException("表达式不能为空");
+        }
+
+        // 三步转换：词法分析 → 中缀转后缀 → 后缀转Lisp
+        $tokens = $this->tokenize($expr);
+        $postfix = $this->infixToPostfix($tokens);
+        $lisp = $this->postfixToLisp($postfix);
+
+        return $lisp;
+    }
+}
+
